@@ -1,0 +1,29 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ingredient_holder"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="@dimen/widget_margin">
+
+    <TextView
+        android:id="@+id/quantity_text"
+        style="@style/ThemeOverlay.ViewHolderBodyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_weight="3"
+        android:contentDescription="@string/ingrediaent_description"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/ingredient_text"
+        style="@style/ThemeOverlay.ViewHolderBodyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_weight="1"
+        android:contentDescription="@string/measure_description"
+        android:gravity="start" />
+
+
+</LinearLayout>

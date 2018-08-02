@@ -1,0 +1,293 @@
+package com.sealstudios.bakinapp;
+
+import android.app.ListActivity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import android.support.v4.app.NavUtils;
+import android.support.v7.app.ActionBar;
+import android.view.MenuItem;
+
+import com.google.gson.Gson;
+import com.sealstudios.Utils.Constants;
+import com.sealstudios.objects.Ingredient;
+import com.sealstudios.objects.Recipe;
+import com.sealstudios.objects.Step;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * An activity representing a list of steps. This activity
+ * has different presentations for handset and tablet-size devices. On
+ * handsets, the activity presents a list of items, which when touched,
+ * lead to a {@link recipeDetailActivity} representing
+ * item details. On tablets, the activity presents the list of items and
+ * item details side-by-side using two vertical panes.
+ */
+public class recipeListActivity extends AppCompatActivity {
+
+    /**
+     * Whether or not the activity is in two-pane mode, i.e. running on a tablet
+     * device.
+     */
+    private static final String TAG = "BA_rcpLstAct";
+    private boolean mTwoPane;
+    private Recipe recipe;
+    private ArrayList<Step> steps;
+    private ArrayList<Ingredient> ingredients;
+    private static int staticPosition = 0;
+    private recipeListActivity mParentActivity;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_recipe_list);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.setTitle(getTitle());
+        Bundle bundle = new Bundle();
+        steps = new ArrayList<>();
+        ingredients = new ArrayList<>();
+        if (findViewById(R.id.recipe_detail_container) != null) {
+            // The detail container view will be present only in the
+            // large-screen layouts (res/values-w900dp).
+            // If this view is present, then the
+            // activity should be in two-pane mode.
+            mTwoPane = true;
+        }
+        bundle = getIntent().getExtras();
+        if (bundle != null){
+            recipe = bundle.getParcelable(Constants.RECIPE);
+            setRecipe(recipe);
+            if (bundle.containsKey(Constants.POSITION)){
+                staticPosition = bundle.getInt(Constants.POSITION);
+            }
+            steps.clear();
+            steps.addAll(recipe.getSteps());
+            ingredients.addAll(recipe.getIngredients());
+            if (mTwoPane){
+                mParentActivity = this;
+                Bundle arguments = new Bundle();
+                arguments.putParcelableArrayList(Constants.STEP, steps);
+                arguments.putInt(Constants.POSITION,steps.get(staticPosition).getId());
+                recipeDetailFragment fragment = new recipeDetailFragment();
+                fragment.setArguments(arguments);
+                mParentActivity.getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.recipe_detail_container, fragment)
+                        .commit();
+            }
+        }
+        if (savedInstanceState != null){
+            steps.clear();
+            steps.addAll(getRecipe().getSteps());
+            if (mTwoPane){
+                mParentActivity = this;
+                Bundle arguments = new Bundle();
+                arguments.putParcelableArrayList(Constants.STEP, steps);
+                arguments.putInt(Constants.POSITION,steps.get(staticPosition).getId());
+                recipeDetailFragment fragment = new recipeDetailFragment();
+                fragment.setArguments(arguments);
+                mParentActivity.getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.recipe_detail_container, fragment)
+                        .commit();
+            }
+        }else {
+            Log.d(TAG,"on create saved state is null");
+        }
+        // Show the Up button in the action bar.
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            //TODO here recipe is null
+            actionBar.setTitle(getRecipe().getName());
+        }
+
+        View recyclerView = findViewById(R.id.recipe_list);
+        View ingredRecyclerView = findViewById(R.id.ingredient_list);
+        assert recyclerView != null;
+        setupRecyclerView((RecyclerView) recyclerView);
+        setupIngredientView((RecyclerView) ingredRecyclerView);
+    }
+
+    public void setRecipe(Recipe recipe) {
+        this.recipe = recipe;
+    }
+
+    public Recipe getRecipe() {
+        return recipe;
+    }
+
+
+
+    private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
+        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(this, steps, mTwoPane));
+    }
+
+    public static class SimpleItemRecyclerViewAdapter
+            extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
+
+        private final recipeListActivity mParentActivity;
+        private final ArrayList<Step> mValues;
+        private final boolean mTwoPane;
+        private final View.OnClickListener mOnClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Step item = (Step) view.getTag();
+                Bundle arguments = new Bundle();
+                arguments.putParcelableArrayList(Constants.STEP, mValues);
+                arguments.putInt(Constants.POSITION,item.getId());
+                if (mTwoPane) {
+                    recipeDetailFragment fragment = new recipeDetailFragment();
+                    fragment.setArguments(arguments);
+                    mParentActivity.getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.recipe_detail_container, fragment)
+                            .commit();
+                } else {
+                    Context context = view.getContext();
+                    Intent intent = new Intent(context, recipeDetailActivity.class);
+                    intent.putExtras(arguments);
+                    context.startActivity(intent);
+                }
+                staticPosition = item.getId();
+            }
+        };
+
+        SimpleItemRecyclerViewAdapter(recipeListActivity parent,
+                                      ArrayList<Step> items,
+                                      boolean twoPane) {
+            mValues = items;
+            mParentActivity = parent;
+            mTwoPane = twoPane;
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.recipe_list_content, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(final ViewHolder holder, int position) {
+            holder.mIdView.setText(mValues.get(position).getShortDescription());
+            holder.mContentView.setText(mValues.get(position).getDescription());
+
+            holder.itemView.setTag(mValues.get(position));
+            holder.itemView.setOnClickListener(mOnClickListener);
+        }
+
+        @Override
+        public int getItemCount() {
+            return mValues.size();
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+            final TextView mIdView;
+            final TextView mContentView;
+
+            ViewHolder(View view) {
+                super(view);
+                mIdView = (TextView) view.findViewById(R.id.id_text);
+                mContentView = (TextView) view.findViewById(R.id.content);
+            }
+        }
+    }
+
+    private void setupIngredientView(@NonNull RecyclerView recyclerView) {
+        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter2(this, ingredients, mTwoPane));
+    }
+
+    public static class SimpleItemRecyclerViewAdapter2
+            extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter2.ViewHolder> {
+
+        private final recipeListActivity mParentActivity;
+        private final ArrayList<Ingredient> mValues;
+        private final boolean mTwoPane;
+
+        SimpleItemRecyclerViewAdapter2(recipeListActivity parent,
+                                      ArrayList<Ingredient> items,
+                                      boolean twoPane) {
+            mValues = items;
+            mParentActivity = parent;
+            mTwoPane = twoPane;
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.bakin_app_widget, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(final ViewHolder holder, int position) {
+            Ingredient ingredient = mValues.get(position);
+            String quantity = String.valueOf(ingredient.getQuantity()) + " " + ingredient.getMeasure();
+            holder.quantityTextView.setText(quantity);
+            holder.ingredienttextView.setText(ingredient.getIngredient());
+        }
+
+        @Override
+        public int getItemCount() {
+            return mValues.size();
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+            final TextView quantityTextView;
+            final TextView ingredienttextView;
+
+            ViewHolder(View view) {
+                super(view);
+                quantityTextView = (TextView) view.findViewById(R.id.quantity_text);
+                ingredienttextView = (TextView) view.findViewById(R.id.ingredient_text);
+            }
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == android.R.id.home) {
+            // This ID represents the Home or Up button. In the case of this
+            // activity, the Up button is shown. Use NavUtils to allow users
+            // to navigate up one level in the application structure. For
+            // more details, see the Navigation pattern on Android Design:
+            //
+            // http://developer.android.com/design/patterns/navigation.html#up-vs-back
+            //
+            NavUtils.navigateUpFromSameTask(this);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable(Constants.RECIPE,recipe);
+        outState.putInt(Constants.POSITION,staticPosition);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        if (savedInstanceState != null){
+            recipe = savedInstanceState.getParcelable(Constants.RECIPE);
+            staticPosition = savedInstanceState.getInt(Constants.POSITION);
+        }else{
+        }
+        super.onRestoreInstanceState(savedInstanceState);
+    }
+}
