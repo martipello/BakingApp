@@ -12,13 +12,6 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public class StepTest {
 
-    @Test
-    public void describeContents() {
-    }
-
-    @Test
-    public void writeToParcel() {
-    }
 
     @Test
     public void isParcleable(){

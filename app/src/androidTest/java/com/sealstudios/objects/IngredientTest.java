@@ -17,13 +17,6 @@ import static org.junit.Assert.*;
 
 public class IngredientTest {
 
-    @Test
-    public void describeContents() {
-    }
-
-    @Test
-    public void writeToParcel() {
-    }
 
     @Test
     public void isParcleable(){

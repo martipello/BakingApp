@@ -84,7 +84,9 @@ public class DetailPagingFragment extends Fragment {
     private Player.EventListener eventListener;
     private VideoListener videoListener;
     private recipeDetailActivity recipeDetailActivity;
-    private long playbackPosition = 0;
+    private long playbackPosition;
+
+
     private boolean playWhenReady = false;
     private int currentWindow = 0;
 
@@ -108,20 +110,29 @@ public class DetailPagingFragment extends Fragment {
             setStep(step);
             position = bundle.getInt(Constants.POSITION);
         }
-
-        if (savedInstanceState != null) {
-            step = savedInstanceState.getParcelable(Constants.STEP);
-            setStep(step);
-            position = savedInstanceState.getInt(Constants.POSITION);
-            playbackPosition = savedInstanceState.getLong(Constants.VIDEO_POSITION);
-        }
         step = getStep();
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        if (savedInstanceState != null){
+
+            step = savedInstanceState.getParcelable(Constants.STEP);
+            position = savedInstanceState.getInt(Constants.POSITION);
+            playbackPosition = savedInstanceState.getLong(Constants.VIDEO_POSITION,0);
+            Log.d(TAG,"playbackPosition OAC is " + playbackPosition + " position " + position);
+            //resumePlaybackFromPreviousPosition(playbackPosition);
+            setStep(step);
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.recipe_detail, container, false);
+        playbackPosition = 0;
+        Log.d(TAG,"playbackPosition OCV is " + playbackPosition + " position " + position);
         mContext = getActivity();
         TextView shortDescription = rootView.findViewById(R.id.recipe_short_detail_text);
         TextView descriptionText = rootView.findViewById(R.id.recipe_detail_text);
@@ -142,9 +153,10 @@ public class DetailPagingFragment extends Fragment {
                     new DefaultTrackSelector(), new DefaultLoadControl());
             playerView.setPlayer(player);
             player.setPlayWhenReady(playWhenReady);
-            player.seekTo(currentWindow, playbackPosition);
+            Log.d(TAG, "play position is " + playbackPosition + " position " + position);
             MediaSource mediaSource = buildMediaSource(uri);
             player.prepare(mediaSource, true, false);
+            resumePlaybackFromPreviousPosition(playbackPosition);
         }
 
     }
@@ -170,17 +182,6 @@ public class DetailPagingFragment extends Fragment {
         outState.putLong(Constants.VIDEO_POSITION, playbackPosition);
         setStep(step);
         super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-        if (savedInstanceState != null){
-            step = savedInstanceState.getParcelable(Constants.STEP);
-            position = savedInstanceState.getInt(Constants.POSITION);
-            playbackPosition = savedInstanceState.getLong(Constants.VIDEO_POSITION);
-            setStep(step);
-        }
-        super.onViewStateRestored(savedInstanceState);
     }
 
     private long getCurrentPlayerPosition() {
@@ -240,8 +241,8 @@ public class DetailPagingFragment extends Fragment {
         }
     }
 
-    private void resumePlaybackFromPreviousPosition(int prevPosition) {
-        player.seekTo(playbackPosition);
+    private void resumePlaybackFromPreviousPosition(long prevPosition) {
+        player.seekTo(prevPosition);
     }
 
 

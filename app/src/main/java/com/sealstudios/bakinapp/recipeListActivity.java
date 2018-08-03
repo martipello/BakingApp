@@ -228,7 +228,7 @@ public class recipeListActivity extends AppCompatActivity {
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.bakin_app_widget, parent, false);
+                    .inflate(R.layout.ingredient_view_holder, parent, false);
             return new ViewHolder(view);
         }
 
